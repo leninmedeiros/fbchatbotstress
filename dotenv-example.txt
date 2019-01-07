@@ -1,0 +1,14 @@
+This is how your .env file should look like (this line must be removed).
+PORT=1337
+INTERACTION_MODE="fake human"
+FB_ACCESS_TOKEN="token here"
+WEBHOOK_TOKEN="token here"
+MONGODB_URI="uri here"
+MONGODB_DB="db name here"
+MONGODB_COL_USERS="collection name here"
+MONGODB_COL_MESSAGES="collection name here"
+IBM_WATSON_ASSIST_USERNAME="username here"
+IBM_WATSON_ASSIST_PASSWORD="password here"
+IBM_WATSON_ASSIST_WORKSPACE_ID="workspace id here"
+IBM_WATSON_NLU_USERNAME="username here"
+IBM_WATSON_NLU_PASSWORD="password here"
