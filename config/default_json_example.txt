@@ -1,0 +1,26 @@
+{
+  "mode": "human_fake",
+  "facebook": {
+    "page": {
+      "access_token": "access token here"
+    }
+  },
+  "token_to_verify_webhook": "token here",
+  "mongodb": {
+    "uri": "uri here",
+    "db": "db name here",
+    "collection_users": "collection name here",
+    "collection_messages": "collection name here"
+  },
+  "ibm_watson": {
+    "assistant": {
+      "username": "username here",
+      "password": "password here",
+      "workspace_id": "workspace id here"
+    },
+    "natural_language_understanding": {
+      "username": "username here",
+      "password": "pasword here"
+    }
+  }
+}
