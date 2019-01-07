@@ -9,12 +9,18 @@ let messages = require('./supportive-messages');
 
 const mongodb = require('mongodb');
 
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').load();
+}
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 let users = {};
 
-app.listen(8989, () => console.log('Daily stress assist app listening on port 8989!'));
+const PORT = process.env.PORT || 1337;
+
+app.listen(PORT, () => console.log('Daily stress assist app listening on port ' + PORT + '!'));
 
 app.get('/', (req, res) => res.send('Daily stress assist up and running! ;)'));
 
@@ -25,8 +31,7 @@ app.post('/webhook', (req, res) => {
       let webhook_event = entry.messaging[0];
       let sender_psid = webhook_event.sender.id;
       if (webhook_event.message) {
-        console.log("webhook received a message to process");
-        if (config.get("mode") != "bot") {
+        if (process.env.INTERACTION_MODE != "bot") {
           setTimeout(function(){
             callTypingOn(sender_psid)
           }, 5000);
@@ -47,7 +52,7 @@ app.post('/webhook', (req, res) => {
 });
 
 app.get('/webhook', (req, res) => {
-  let VERIFY_TOKEN = config.get('token_to_verify_webhook');
+  let VERIFY_TOKEN = process.env.WEBHOOK_TOKEN;
   let mode = req.query['hub.mode'];
   let token = req.query['hub.verify_token'];
   let challenge = req.query['hub.challenge'];
@@ -82,11 +87,11 @@ function handleMessage(sender_psid, received_message) {
 }
 
 function saveMessageFromUser(messageFromUser, classificationByWatson) {
-  let uri = config.get("mongodb.uri");
+  let uri = process.env.MONGODB_URI;
   mongodb.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
     if(err) throw err;
-    let db = client.db(config.get("mongodb.db"));
-    let messages = db.collection(config.get("mongodb.collection_messages"));
+    let db = client.db(process.env.MONGODB_DB);
+    let messages = db.collection(process.env.MONGODB_COL_MESSAGES);
     let newMessage = {
       message: messageFromUser,
       classification: classificationByWatson
@@ -103,11 +108,11 @@ function saveMessageFromUser(messageFromUser, classificationByWatson) {
 function getResponseFromTemplates(sender_psid, strategy) {
   return new Promise(function(resolve, reject) {
     let messageToReturn = "";
-    let uri = config.get("mongodb.uri");
+    let uri = process.env.MONGODB_URI;
     mongodb.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
       if(err) throw err;
-      let db = client.db(config.get("mongodb.db"));
-      let users = db.collection(config.get("mongodb.collection_users"));
+      let db = client.db(process.env.MONGODB_DB);
+      let users = db.collection(process.env.MONGODB_COL_USERS);
       users.findOne({ user_id: sender_psid }, function(err, result) {
         if (err) throw err;
         if (result == null) {
@@ -156,7 +161,7 @@ function callTypingOn(sender_psid, cb = null) {
   };
   request({
       "uri": "https://graph.facebook.com/v3.1/me/messages",
-      "qs": { "access_token": config.get('facebook.page.access_token') },
+      "qs": { "access_token": process.env.FB_ACCESS_TOKEN },
       "method": "POST",
       "json": request_body
   }, (err, res, body) => {
@@ -182,7 +187,7 @@ function callSendAPI(sender_psid, response, cb = null) {
   };
   request({
       "uri": "https://graph.facebook.com/v3.1/me/messages",
-      "qs": { "access_token": config.get('facebook.page.access_token') },
+      "qs": { "access_token": process.env.FB_ACCESS_TOKEN },
       "method": "POST",
       "json": request_body
   }, (err, res, body) => {
@@ -198,8 +203,8 @@ function callSendAPI(sender_psid, response, cb = null) {
 
 var NaturalLanguageUnderstandingV1 = require('./node_modules/watson-developer-cloud/natural-language-understanding/v1.js');
 var nlu = new NaturalLanguageUnderstandingV1({
-  username: config.get("ibm_watson.natural_language_understanding.username"),
-  password: config.get("ibm_watson.natural_language_understanding.password"),
+  username: process.env.IBM_WATSON_NLU_USERNAME,
+  password: process.env.IBM_WATSON_NLU_PASSWORD,
   version: '2018-04-05',
   url: 'https://gateway.watsonplatform.net/natural-language-understanding/api/'
 });
@@ -224,8 +229,8 @@ function analyzeSentiment(messageToAnalyze) {
 
 var AssistantV1 = require('watson-developer-cloud/assistant/v1');
 var assistant = new AssistantV1({
-  username: config.get("ibm_watson.assistant.username"),
-  password: config.get("ibm_watson.assistant.password"),
+  username: process.env.IBM_WATSON_ASSIST_USERNAME,
+  password: process.env.IBM_WATSON_ASSIST_PASSWORD,
   url: 'https://gateway.watsonplatform.net/assistant/api/',
   version: '2018-09-19'
 });
@@ -235,7 +240,7 @@ function getResponseFromWatson(inputFromUser) {
     assistant.message(
       {
         input: {text: inputFromUser},
-        workspace_id:  config.get("ibm_watson.assistant.workspace_id")
+        workspace_id:  process.env.IBM_WATSON_ASSIST_WORKSPACE_ID
       },
       function(err, response) {
         if (err) {
