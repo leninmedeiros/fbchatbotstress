@@ -27,6 +27,10 @@ app.get('/terms', function(req, res) {
     res.sendFile('/terms.html', {root: __dirname })
 });
 
+app.get('/privacy', function(req, res) {
+    res.sendFile('/privacy.html', {root: __dirname })
+});
+
 app.post('/webhook', (req, res) => {
   let body = req.body;
   if (body.object === 'page') {
