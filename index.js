@@ -23,6 +23,10 @@ app.listen(PORT, () => console.log('Daily stress assist app listening on port ' 
 
 app.get('/', (req, res) => res.send('Daily stress assist up and running! ;)'));
 
+app.get('/terms', function(req, res) {
+    res.sendFile('/terms.html', {root: __dirname })
+});
+
 app.post('/webhook', (req, res) => {
   let body = req.body;
   if (body.object === 'page') {
