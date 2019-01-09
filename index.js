@@ -2,8 +2,7 @@
 let express = require('express'),
     bodyParser = require('body-parser'),
     app = express(),
-    request = require('request'),
-    config = require('config');
+    request = require('request');
 
 let messages = require('./supportive-messages');
 
