@@ -6,7 +6,7 @@ let express = require('express'),
 
 let messages = require('./supportive-messages');
 
-const mongodb = require('mongodb');
+const MONGODB = require('mongodb');
 
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').load();
@@ -103,7 +103,7 @@ function handleMessage(sender_psid, received_message) {
 
 function saveMessageFromUser(messageFromUser, classificationByWatson) {
   let uri = process.env.MONGODB_URI;
-  mongodb.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
+  MONGODB.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
     if(err) throw err;
     let db = client.db(process.env.MONGODB_DB);
     let messages = db.collection(process.env.MONGODB_COL_MESSAGES);
@@ -124,7 +124,7 @@ function getResponseFromTemplates(sender_psid, strategy) {
   return new Promise(function(resolve, reject) {
     let messageToReturn = "";
     let uri = process.env.MONGODB_URI;
-    mongodb.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
+    MONGODB.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
       if(err) throw err;
       let db = client.db(process.env.MONGODB_DB);
       let users = db.collection(process.env.MONGODB_COL_USERS);
