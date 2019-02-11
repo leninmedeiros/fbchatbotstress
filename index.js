@@ -12,6 +12,8 @@ let warning_message_1 = "```Dear participant, please make sure each message sent
 
 let warning_message_2 = "```Dear participant, please make sure you send only text messages (containing more than 10 words). We kindly invite you to rewrite your last sentence, so we can deliver it to the chatbot.```";
 
+let welcome_message = "```Hello, there! You have just started to participate in our experiment! Here goes your PARTICIPANT ID: P_ID```"
+
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').load();
 }
@@ -64,16 +66,24 @@ app.post('/webhook', (req, res) => {
               if (res != "negative") {
                 callSendAPI(sender_psid, warning_message_1);
               } else {
-                if (process.env.INTERACTION_MODE != "bot") {
-                  setTimeout(function(){
-                    callTypingOn(sender_psid)
-                  }, 5000);
-                  setTimeout(function(){
-                    handleMessage(sender_psid, webhook_event.message)
-                  }, 10000);
-                } else {
-                  handleMessage(sender_psid, webhook_event.message);
-                }
+                checkIfTheUserIsNew(sender_psid).then(
+                  res => {
+                    if (res) {
+                      let wmessage = welcome_message.replace("P_ID", sender_psid);
+                      callSendAPI(sender_psid, wmessage);
+                    }
+                    if (process.env.INTERACTION_MODE != "bot") {
+                      setTimeout(function(){
+                        callTypingOn(sender_psid)
+                      }, 5000);
+                      setTimeout(function(){
+                        handleMessage(sender_psid, webhook_event.message)
+                      }, 10000);
+                    } else {
+                      handleMessage(sender_psid, webhook_event.message);
+                    }
+                  }
+                )
               }
             }
           )
@@ -130,6 +140,28 @@ function saveMessageFromUser(messageFromUser, classificationByWatson) {
       if(err) throw err;
     });
   });
+}
+
+function checkIfTheUserIsNew(sender_psid) {
+  return new Promise(function(resolve, reject) {
+    let uri = process.env.MONGODB_URI;
+    MONGODB.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
+      if(err) throw err;
+      let db = client.db(process.env.MONGODB_DB);
+      let users = db.collection(process.env.MONGODB_COL_USERS);
+      users.findOne({ user_id: sender_psid }, function(err, result) {
+        if (err) throw err;
+        if (result == null) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+        client.close(function (err) {
+          if(err) throw err;
+        });
+      });
+    });
+  })
 }
 
 function getResponseFromTemplates(sender_psid, strategy) {
