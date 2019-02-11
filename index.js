@@ -114,7 +114,7 @@ app.get('/webhook', (req, res) => {
 });
 
 function handleMessage(sender_psid, received_message) {
-  getResponseFromWatson(received_message.text).then(
+  getResponseFromWatson(received_message.text, sender_psid).then(
     res => {
       getResponseFromTemplates(sender_psid, res).then(
         res => {
@@ -123,13 +123,16 @@ function handleMessage(sender_psid, received_message) {
     });
 }
 
-function saveMessageFromUser(messageFromUser, classificationByWatson) {
+function saveMessageFromUser(messageFromUser, classificationByWatson, sender_psid) {
   let uri = process.env.MONGODB_URI;
   MONGODB.MongoClient.connect(uri, {useNewUrlParser: true}, function(err, client) {
     if(err) throw err;
     let db = client.db(process.env.MONGODB_DB);
     let messages = db.collection(process.env.MONGODB_COL_MESSAGES);
+    var datetime = new Date();
     let newMessage = {
+      sender: sender_psid,
+      datetime: datetime,
       message: messageFromUser,
       classification: classificationByWatson
     }
@@ -294,7 +297,7 @@ var assistant = new AssistantV1({
   version: '2018-09-19'
 });
 
-function getResponseFromWatson(inputFromUser) {
+function getResponseFromWatson(inputFromUser, sender_psid) {
   return new Promise(function(resolve, reject) {
     assistant.message(
       {
@@ -305,7 +308,7 @@ function getResponseFromWatson(inputFromUser) {
         if (err) {
           reject(err);
         } else {
-          saveMessageFromUser(inputFromUser, response["entities"]);
+          saveMessageFromUser(inputFromUser, response["entities"], sender_psid);
           resolve(response["output"]["generic"][0]["text"]);
         }
       }
