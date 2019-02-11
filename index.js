@@ -8,8 +8,17 @@ let messages = require('./supportive-messages');
 
 const MONGODB = require('mongodb');
 
+let warning_message_1 = "```Dear participant, please make sure each message sent by you describe one stressful event you faced in the last 24 hours. We kindly invite you to rewrite your last sentence, so we can deliver it to the chatbot.```";
+
+let warning_message_2 = "```Dear participant, please make sure you send only text messages (containing more than 10 words). We kindly invite you to rewrite your last sentence, so we can deliver it to the chatbot.```";
+
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').load();
+}
+
+if (process.env.INTERACTION_MODE != "bot") {
+  warning_message_1 = warning_message_1.replace('chatbot', 'other participant');
+  warning_message_2 = warning_message_2.replace('chatbot', 'other participant');
 }
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -46,15 +55,28 @@ app.post('/webhook', (req, res) => {
       let webhook_event = entry.messaging[0];
       let sender_psid = webhook_event.sender.id;
       if (webhook_event.message) {
-        if (process.env.INTERACTION_MODE != "bot") {
-          setTimeout(function(){
-            callTypingOn(sender_psid)
-          }, 5000);
-          setTimeout(function(){
-            handleMessage(sender_psid, webhook_event.message)
-          }, 10000);
+        let received_message = webhook_event.message;
+        if (!received_message.text || received_message.text.split(" ").length <= 10) {
+          callSendAPI(sender_psid, warning_message_2);
         } else {
-          handleMessage(sender_psid, webhook_event.message);
+          analyzeSentiment(received_message.text).then(
+            res => {
+              if (res != "negative") {
+                callSendAPI(sender_psid, warning_message_1);
+              } else {
+                if (process.env.INTERACTION_MODE != "bot") {
+                  setTimeout(function(){
+                    callTypingOn(sender_psid)
+                  }, 5000);
+                  setTimeout(function(){
+                    handleMessage(sender_psid, webhook_event.message)
+                  }, 10000);
+                } else {
+                  handleMessage(sender_psid, webhook_event.message);
+                }
+              }
+            }
+          )
         }
       } else if (webhook_event.postback) {
         handlePostback(sender_psid, webhook_event.postback);
@@ -82,23 +104,13 @@ app.get('/webhook', (req, res) => {
 });
 
 function handleMessage(sender_psid, received_message) {
-  console.log("entering handleMessage...");
-  let n_words = received_message.text.split(" ").length;
-  if (received_message.text && n_words > 10) {
-    let sentiment = "undefined"
-    analyzeSentiment(received_message.text).then(
-      res => {
-        if (res == "negative") {
-          getResponseFromWatson(received_message.text).then(
-            res => {
-              getResponseFromTemplates(sender_psid, res).then(
-                res => {
-                  callSendAPI(sender_psid, res);
-                });
-            });
-        }
-      });
-  }
+  getResponseFromWatson(received_message.text).then(
+    res => {
+      getResponseFromTemplates(sender_psid, res).then(
+        res => {
+          callSendAPI(sender_psid, res);
+        });
+    });
 }
 
 function saveMessageFromUser(messageFromUser, classificationByWatson) {
