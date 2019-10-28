@@ -14,7 +14,8 @@
     "config": "^1.30.0",
     "dotenv": "^6.2.0",
     "express": "^4.16.3",
-    "mongodb": "^3.1.10",
+    "lodash": "^4.17.15",
+    "mongodb": "^3.3.3",
     "request": "^2.87.0",
     "watson-developer-cloud": "^3.13.0"
   }
